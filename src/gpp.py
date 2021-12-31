@@ -52,11 +52,30 @@ def handle_include(inp: str) -> List[str]:
 def handle_if(inp: str) -> List[str]:
     temp: List[str] = []
     i: int = 0
+    type_: str = ''
 
     while i < len(inp):
 
         keywords = inp[i].split(' ')
-        if handle_logical_ops(keywords[1], keywords[3], keywords[2]):
+        condition: bool = False
+
+        if keywords[0] == '#if':
+            type_ = 'if'
+        elif keywords[0] == '#ifdef':
+            type_ = 'def'
+        elif keywords[0] == '#ifndef':
+            type_ = 'ndef'
+
+        if type_ == 'if':
+            condition = handle_logical_ops(keywords[1], keywords[3], keywords[2])
+
+        if type_ == 'def':
+            condition = defines.get(keywords[1], False)
+
+        if type_ == 'ndef':
+            condition = not defines.get(keywords[1], False)
+
+        if condition:
 
             while True:
 
@@ -68,12 +87,12 @@ def handle_if(inp: str) -> List[str]:
                     while True:
 
                         if inp[i].strip().startswith('#endif'):
-                            return temp[1:]
+                            return temp[1:-1]
 
                         i += 1
 
-                temp.append(inp[i])
                 i += 1
+                temp.append(inp[i])
 
         else:
             while True:
@@ -183,6 +202,11 @@ if __name__ == '__main__':
     echo not equal
     echo not equal again
 #endif
+
+#ifdef W
+    echo defined
+#endif
+
 print(hey)
 echo "HEY"
     '''
