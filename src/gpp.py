@@ -1,10 +1,21 @@
 #!/bin/python3
 
 import re
+import os 
+import sys
+import argparse
 import itertools
 from typing import List, Dict
+from datetime import datetime
 
-defines: Dict[str, str] = dict()
+
+def init_defs() -> Dict[str, str]:
+    defines: Dict[str, str] = dict()
+    defines['__FILE__'] = os.getcwd()
+    defines['__DATE__'] = datetime.today().strftime('%Y-%m-%d')
+    defines['__TIME__'] = datetime.today().strftime('%H:%M:%S')
+
+    return defines
 
 
 def read_file(file_name: str) -> List[str]:
@@ -36,14 +47,19 @@ def handle_logical_ops(arg1: str, arg2: str, op: str) -> bool:
         return arg1 <= arg2
     if op == '!=':
         return arg1 != arg2
+    if op == 'or':
+        return arg1 or arg2
+    if op == 'and':
+        return arg1 and arg2
+    if op == 'nand':
+        return arg1 and not arg2
 
 
-def apply_defs(inp: str) -> str:
+def apply_defs(inp: str, defs: Dict[str, str]) -> str:
     for key, value in defines.items():
         inp = inp.replace(key, value)
 
     return inp
-
 
 def handle_include(inp: str) -> List[str]:
     return ['\n'.join(read_file(inp.split()[1].lstrip('"').strip('"')))]
