@@ -18,7 +18,7 @@ def init_defs() -> Dict[str, str]:
     return defines
 
 
-def read_file(file_name: str) -> List[str]:
+def read_file(file_name: str) -> str:
     lines: List[str] = list()
     with open(file_name, encoding='utf-8') as file_in:
         for line in file_in:
@@ -60,6 +60,7 @@ def apply_defs(inp: str, defs: Dict[str, str]) -> str:
         inp = inp.replace(key, value)
 
     return inp
+
 
 def handle_include(inp: str) -> List[str]:
     return ['\n'.join(read_file(inp.split()[1].lstrip('"').strip('"')))]
@@ -170,7 +171,7 @@ def if_expression(inp: str) -> (List[str], int):
     return res, jump
 
 
-def prep(inp: str):
+def handle_exp(inp: str):
     temp = []
     i: int = 0
     inp = inp.split('\n')
@@ -203,39 +204,46 @@ def prep(inp: str):
 
 
 if __name__ == '__main__':
+    defines = init_defs()
 
-    test = '''
-#include "hey.sh"
+    parser = argparse.ArgumentParser(description='Args for GPP')
 
-#define AREA 43
+    parser.add_argument('-E', action='store_true', help='print the pre-processor output to the console')
+    parser.add_argument('-s', action='store_true', help='if this flag is set then gpp will save the output(name will be determined by the -o flag please see -h)')
+    parser.add_argument('--save', action='store_true', help='if this flag is set then gpp will save the output(name will be determined by the -o flag please see -h)')
+    parser.add_argument('file', help='relative path to the input file')
+    parser.add_argument('-o', help='relative path to the output file', default='gpp.out')
+    parser.add_argument('--run', help='relative path to the input file', nargs='+')
 
-#define W 43
+    options = parser.parse_args()
+    out_file = options.o
 
-#if W == AREA
-    echo equal
-    echo equal
-#else
-    echo not equal
-    echo not equal again
-#endif
+    if not options.file:
+        print(f"[ERROR] you must provide a path")
+        sys.exit()
 
-#ifdef W
-    echo defined
-#endif
+    if not os.path.exists(options.file):
+        print(f"[ERROR] path: {str(options.file)} does not exist")
+        sys.exit()
 
-print(hey)
-echo "HEY"
-    '''
+    inp = read_file(options.file)
+    inp = '\n'.join(inp)
 
-    test1 = '\n'.join(read_file('./test.sh'))
+    out = handle_exp(inp)
+    out = stringify(out)
+    out = apply_defs(out, defines)
 
-    print('output')
-    print('======================================')
-    print()
+    if options.s or options.save or options.o != 'gpp.out':
+        out_file = open(options.o, "w")
 
-    a = prep(test)
+        out_file.write(out)
 
-    print()
-    # print(a)
-    print()
-    print(apply_defs(stringify(a)))
+        out_file.close()
+
+    if options.E:
+        print("[INFO] logging the pre-processer output", end='\n\n')
+        print(out, end='')
+
+    if options.run:
+        os.system(' '.join(options.run))
+
